@@ -1074,6 +1074,7 @@ svg {
   border-radius: 8px;
   border: 1px solid var(--border);
   isolation: isolate;
+  container: live-player / inline-size;
 }
 .video-surface video {
   width: 100%;
@@ -1180,6 +1181,10 @@ svg {
 }
 .control-spacer {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
 }
 .player-info {
   display: flex;
@@ -1959,6 +1964,31 @@ svg {
     padding-right: 8px;
     gap: 6px;
     font-size: 12px;
+  }
+}
+@container live-player (max-width: 620px) {
+  .player-controls {
+    height: 80px;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: space-between;
+    row-gap: 4px;
+  }
+  .control-spacer {
+    order: 1;
+    flex: 0 0 100%;
+    height: 20px;
+  }
+  .player-footer-brand {
+    max-height: 20px;
+  }
+  .playback-overlay {
+    bottom: 88px;
+    gap: 12px;
+  }
+  .playback-overlay > .channel-logo {
+    width: 60px;
+    height: 32px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

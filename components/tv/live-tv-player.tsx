@@ -18,7 +18,7 @@ import {
   Info
 } from 'lucide-react'
 import type { Channel } from '@/lib/iptv/types'
-import { QYXProductMark } from '@/components/brand'
+import { QYXProductMark, QuantumYieldWordmark } from '@/components/brand'
 import { ChannelLogo } from './channel-grid'
 
 type Playback = 'loading' | 'playing' | 'paused' | 'error'
@@ -385,7 +385,13 @@ export function LiveTVPlayer({
             <span className={atLiveEdge && status === 'playing' ? 'status-dot' : 'muted-dot'} />
             <span>{atLiveEdge ? 'LIVE' : 'Go live'}</span>
           </button>
-          <span className="control-spacer" />
+          <span className="control-spacer">
+            <QuantumYieldWordmark
+              variant="white"
+              height={24}
+              className="player-watermark player-footer-brand"
+            />
+          </span>
           {pipSupported && (
             <button
               className="icon-button pip-button"
