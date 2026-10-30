@@ -1,45 +1,42 @@
 'use client'
-import { useState } from 'react'
-import { Play, Search } from 'lucide-react'
-import type { Channel } from '@/lib/iptv/types'
+import { useDeferredValue, useMemo, useState } from 'react'
+import { Play, ChevronRight } from 'lucide-react'
+import type { Catalogue, Channel } from '@/lib/iptv/types'
+import { createChannelIndex, searchChannels } from '@/lib/iptv/search'
+import { ChannelSearch } from './category-filters'
+import { useLanguage } from './language-provider'
 import { useGridCapacity } from '@/hooks/use-viewport'
 import { ChannelLogo, Pager } from './channel-grid'
 
 export function ChannelSidebar({
   channels,
   selectedId,
-  onWatch
+  onWatch,
+  onCollapse,
+  metadata
 }: {
   channels: Channel[]
   selectedId?: string
   onWatch: (channel: Channel) => void
+  onCollapse?: () => void
+  metadata?: Pick<Catalogue, 'countries' | 'languages'>
 }) {
+  const { t, categoryName, channelCount } = useLanguage()
   const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
   const [anchor, setAnchor] = useState(0)
   const { ref, capacity } = useGridCapacity(1000, 64)
-  const filtered = channels.filter(channel =>
-    channel.name.toLowerCase().includes(query.toLowerCase())
-  )
+  const index = useMemo(() => createChannelIndex(channels, metadata), [channels, metadata])
+  const filtered = useMemo(() => searchChannels(index, deferredQuery), [index, deferredQuery])
   const pages = capacity ? Math.ceil(filtered.length / capacity) : 0
   const page = Math.min(Math.floor(anchor / (capacity || 1)), Math.max(0, pages - 1))
   return (
-    <aside className="channel-sidebar" aria-label="Browse live channels">
+    <aside className="channel-sidebar" aria-label={t("Browse live channels")}>
       <div className="sidebar-heading">
-        <h2>On the air</h2>
-        <span>{filtered.length} channels</span>
+        <div><h2>{t('On the air')}</h2><span role="status">{channelCount(filtered.length)}</span></div>
+        {onCollapse && <button className="icon-button channel-collapse" onClick={onCollapse} aria-label={t('Collapse channel panel')} title={t('Hide channels')} aria-expanded={true} aria-controls="live-channel-panel"><ChevronRight size={20} className="channel-toggle-hint" /></button>}
       </div>
-      <label className="search-field">
-        <Search size={16} />
-        <input
-          aria-label="Search live channel list"
-          placeholder="Find a channel"
-          value={query}
-          onChange={event => {
-            setQuery(event.target.value)
-            setAnchor(0)
-          }}
-        />
-      </label>
+      <ChannelSearch label={t('Search live channel list')} placeholder={t('Find a channel')} query={query} onChange={value => { setQuery(value); setAnchor(0) }} />
       <div className="sidebar-channels" ref={ref}>
         {capacity ? (
           filtered.slice(page * capacity, (page + 1) * capacity).map(channel => (
@@ -53,16 +50,16 @@ export function ChannelSidebar({
               <span>
                 <strong>{channel.name}</strong>
                 <small>
-                  {channel.categories[0] ?? 'General'} · {channel.country}
+                  {categoryName(channel.categories[0] ?? 'general')} · {channel.country}
                 </small>
               </span>
               {selectedId === channel.id && <Play size={14} />}
             </button>
           ))
         ) : (
-          <p className="fit-notice">Close the keyboard to browse channels.</p>
+          <p className="fit-notice">{t("Close the keyboard to browse channels.")}</p>
         )}
-        {capacity > 0 && !filtered.length && <p>No matching channels.</p>}
+        {capacity > 0 && !filtered.length && <p>{t("No matching channels.")}</p>}
       </div>
       <Pager
         page={page}

@@ -1,0 +1,161 @@
+.language-switch {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--qyx-radius-xs);
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.language-switch button {
+  min-height: 40px;
+  min-width: 36px;
+  font-family: var(--font-qyx-mono), monospace;
+  font-size: 11px;
+  border-radius: 3px;
+  color: var(--foreground-muted);
+}
+.language-switch button[aria-pressed='true'] {
+  color: var(--qyx-champagne);
+  background: var(--surface-elevated);
+  box-shadow: inset 0 -2px var(--qyx-champagne);
+}
+.language-switch button:hover { color: var(--foreground); }
+.language-setting { display: flex; align-items: center; justify-content: space-between; }
+.search-scope {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 12px;
+  color: var(--qyx-champagne);
+  white-space: nowrap;
+}
+.search-field input::-webkit-search-cancel-button { display: none; }
+.route-preloader, .tv-main.catalogue-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.route-preloader { height: 100dvh; }
+.qyx-preloader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  max-width: 420px;
+  text-align: center;
+  animation: qyx-loader-reveal 220ms ease-out both;
+}
+.qyx-preloader strong {
+  font-family: var(--font-qyx-mono), monospace;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--qyx-platinum);
+}
+.qyx-preloader .qyx-loading-detail {
+  font-family: var(--font-qyx-body), sans-serif;
+  color: var(--foreground-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.qyx-preloader.compact { gap: 16px; }
+.qyx-loading-track {
+  width: 120px;
+  height: 2px;
+  background: var(--surface-elevated);
+  overflow: hidden;
+}
+.qyx-loading-track > span {
+  display: block;
+  width: 45%;
+  height: 100%;
+  background: var(--qyx-champagne);
+  animation: qyx-loading-scan 1400ms ease-in-out infinite;
+}
+.brand-filter-definitions { position: absolute; pointer-events: none; }
+.player-watermark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: qyx-brand-breathe 6s ease-in-out infinite;
+}
+.player-watermark img { max-width: 100%; }
+.watch-layout.sidebar-collapsed { grid-template-columns: minmax(0, 1fr) 48px; }
+.watch-sidebar[hidden] { display: none; }
+.sidebar-heading > div { display: flex; flex-direction: column; gap: 4px; }
+.sidebar-heading > div > span { color: var(--foreground-muted); font-size: 11px; }
+.channel-collapse { color: var(--qyx-champagne); border-color: var(--border-strong); }
+.channel-toggle-hint { animation: qyx-collapse-hint 1600ms ease-in-out 3; }
+.collapsed-channel-rail {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 44px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--qyx-champagne);
+  padding-block: 16px;
+}
+.collapsed-channel-rail:hover { background: var(--surface-elevated); }
+.collapsed-channel-rail > span { writing-mode: vertical-rl; font-size: 13px; letter-spacing: 0.04em; }
+.collapsed-channel-rail > small { font-family: var(--font-qyx-mono), monospace; font-size: 11px; color: var(--foreground-muted); }
+.pip-placeholder { flex-direction: column; color: var(--foreground-muted); text-align: center; }
+.pip-compositor-video { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.pip-document { margin: 0; overflow: hidden; }
+.pip-player {
+  position: relative;
+  isolation: isolate;
+  width: 100vw;
+  height: 100dvh;
+  background: var(--qyx-void-black);
+  color: var(--qyx-platinum);
+  font-family: var(--font-qyx-ui), sans-serif;
+}
+.pip-video { position: absolute; inset: 0 0 76px; }
+.pip-video video { width: 100%; height: 100%; object-fit: contain; }
+.pip-controls {
+  position: absolute;
+  inset: auto 0 0;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.pip-signature { flex: 0 0 100%; display: flex; justify-content: center; height: 28px; }
+.pip-signature img { max-height: 20px; }
+.pip-channel-name { flex: 1; min-width: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pip-status { position: absolute; inset: 48px 16px 84px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; text-align: center; font-size: 12px; }
+@keyframes qyx-brand-breathe { 0%, 100% { opacity: .33; } 50% { opacity: 1; } }
+@keyframes qyx-loading-scan { 0% { transform: translateX(-105%); } 100% { transform: translateX(325%); } }
+@keyframes qyx-loader-reveal { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes qyx-collapse-hint { 0%, 70%, 100% { transform: translateX(0); } 35% { transform: translateX(3px); } }
+@container live-player (max-width: 620px) { .player-footer-brand img { max-height: 20px; } }
+@media (max-width: 1100px) { html[lang='fr'] .category-pills button:nth-child(n+4) { display: none; } }
+@media (max-width: 900px) {
+  .watch-layout.sidebar-collapsed { grid-template-columns: minmax(0, 1fr); }
+  .collapsed-channel-rail { display: none; }
+}
+@media (max-width: 700px) {
+  .country-selector .selected-country-name { display: none; }
+  .search-scope { max-width: 72px; white-space: normal; text-wrap: balance; font-size: 11px; }
+  .player-controls .pip-button { display: inline-flex; }
+  .qyx-preloader { max-width: 90%; }
+  .pip-channel-name { display: none; }
+}
+@media (max-height: 480px) { .qyx-preloader.compact { gap: 8px; } .qyx-preloader.compact .qyx-loading-detail { font-size: 12px; } }
+[data-motion='reduced'] .player-watermark { animation: none !important; opacity: 1; }
+[data-motion='reduced'] .qyx-loading-track > span { animation: none !important; width: 100%; opacity: .65; }
+[data-motion='reduced'] .channel-toggle-hint { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .player-watermark { animation: none !important; opacity: 1 !important; }
+  .qyx-loading-track > span { animation: none !important; width: 100%; opacity: .65; }
+  .channel-toggle-hint { animation: none !important; }
+}

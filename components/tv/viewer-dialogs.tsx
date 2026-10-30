@@ -3,7 +3,8 @@ import * as Dialog from '@radix-ui/react-dialog'
 import useSWR from 'swr'
 import { useRef } from 'react'
 import { ExternalLink, X } from 'lucide-react'
-import type { Channel, GuideSource } from '@/lib/iptv/types'
+import type { Catalogue, Channel, GuideSource } from '@/lib/iptv/types'
+import { useLanguage } from './language-provider'
 import { ChannelSidebar } from './channel-sidebar'
 
 export const fetchJson = async (url: string) => {
@@ -28,6 +29,7 @@ export function ViewerDialog({
   children: React.ReactNode
   className?: string
 }) {
+  const { t } = useLanguage()
   const returnFocus = useRef<HTMLElement | null>(null)
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -46,7 +48,7 @@ export function ViewerDialog({
         >
           <div className="dialog-heading">
             <Dialog.Title>{title}</Dialog.Title>
-            <Dialog.Close className="icon-button" aria-label={`Close ${title.toLowerCase()}`}>
+            <Dialog.Close className="icon-button" aria-label={t('Close {name}', { name: title })}>
               <X size={21} />
             </Dialog.Close>
           </div>
@@ -61,23 +63,27 @@ export function ChannelPicker({
   onOpenChange,
   channels,
   selectedId,
-  onWatch
+  onWatch,
+  metadata
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   channels: Channel[]
   selectedId?: string
   onWatch: (channel: Channel) => void
+  metadata?: Pick<Catalogue, 'countries' | 'languages'>
 }) {
+  const { t } = useLanguage()
   return (
     <ViewerDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Live channels"
+      title={t("Live channels")}
       className="channel-picker"
     >
       <ChannelSidebar
         channels={channels}
+        metadata={metadata}
         selectedId={selectedId}
         onWatch={channel => {
           onWatch(channel)
@@ -88,6 +94,7 @@ export function ChannelPicker({
   )
 }
 export function EPGGuide({ channel }: { channel: Channel }) {
+  const { t } = useLanguage()
   const { data, error, isLoading } = useSWR<{ sources: GuideSource[] }>(
     `/api/guide?id=${encodeURIComponent(channel.id)}`,
     fetchJson,
@@ -96,16 +103,15 @@ export function EPGGuide({ channel }: { channel: Channel }) {
   return (
     <div className="guide-content">
       <p>
-        Schedule times and current program details are not supplied by the M3U playlist. QYXtv does
-        not estimate or invent them.
+        {t("Schedule times and current program details are not supplied by the M3U playlist. QYXtv does not estimate or invent them.")}
       </p>
       {isLoading ? (
-        <p role="status">Checking IPTV-org guide metadata…</p>
+        <p role="status">{t("Checking IPTV-org guide metadata…")}</p>
       ) : error ? (
-        <p role="alert">Guide metadata is temporarily unavailable.</p>
+        <p role="alert">{t("Guide metadata is temporarily unavailable.")}</p>
       ) : data?.sources.length ? (
         <div>
-          <h3>Listed guide providers</h3>
+          <h3>{t("Listed guide providers")}</h3>
           <div className="guide-sources">
             {data.sources.map(source => (
               <div key={source.site}>
@@ -119,14 +125,14 @@ export function EPGGuide({ channel }: { channel: Channel }) {
                 )}
                 <small>
                   {source.language.toUpperCase()}
-                  {!source.url && ' · No public schedule feed'}
+                  {!source.url && ` · ${t('No public schedule feed')}`}
                 </small>
               </div>
             ))}
           </div>
         </div>
       ) : (
-        <p>No guide source is listed for this channel.</p>
+        <p>{t("No guide source is listed for this channel.")}</p>
       )}
       {channel.website && (
         <a
@@ -135,7 +141,7 @@ export function EPGGuide({ channel }: { channel: Channel }) {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Broadcaster website
+          {t("Broadcaster website")}
           <ExternalLink size={16} />
         </a>
       )}

@@ -1,5 +1,6 @@
 'use client'
 import { useRef } from 'react'
+import { useLanguage } from './language-provider'
 import {
   Search,
   X,
@@ -22,7 +23,7 @@ const presets = [
   { id: 'music', name: 'Music', icon: Music2 },
   { id: 'kids', name: 'Kids', icon: Smile },
   { id: 'documentary', name: 'Documentary', icon: Earth }
-]
+] as const
 export function CategoryFilters({
   value,
   onChange,
@@ -34,9 +35,10 @@ export function CategoryFilters({
   categories: { id: string; name: string }[]
   onAdvanced: () => void
 }) {
+  const { t, categoryName } = useLanguage()
   return (
     <div className="category-bar">
-      <div className="category-pills" role="group" aria-label="Channel categories">
+      <div className="category-pills" role="group" aria-label={t("Channel categories")}>
         {presets.map(({ id, name, icon: Icon }) => (
           <button
             key={id}
@@ -45,28 +47,28 @@ export function CategoryFilters({
             aria-pressed={value === id}
           >
             <Icon size={16} />
-            {name}
+            {t(name)}
           </button>
         ))}
       </div>
       <label className="category-select">
         <SlidersHorizontal size={16} />
         <select
-          aria-label="Channel category"
+          aria-label={t("Channel category")}
           value={value}
           onChange={event => onChange(event.target.value)}
         >
-          <option value="">All channels</option>
+          <option value="">{t("All channels")}</option>
           {categories.map(category => (
             <option key={category.id} value={category.id}>
-              {category.name}
+              {categoryName(category.id, category.name)}
             </option>
           ))}
         </select>
       </label>
-      <button className="filter-button" onClick={onAdvanced}>
+      <button className="filter-button" onClick={onAdvanced} aria-label={t('Filters')}>
         <SlidersHorizontal size={16} />
-        <span>Filters</span>
+        <span>{t("Filters")}</span>
       </button>
     </div>
   )
@@ -74,20 +76,32 @@ export function CategoryFilters({
 export function ChannelSearch({
   query,
   onChange,
-  autoFocus
+  autoFocus,
+  label,
+  placeholder
 }: {
   query: string
   onChange: (value: string) => void
   autoFocus?: boolean
+  label?: string
+  placeholder?: string
 }) {
+  const { t } = useLanguage()
   const ref = useRef<HTMLInputElement>(null)
   return (
-    <label className="search-field channel-search">
+    <div className="search-field channel-search" role="search">
       <Search size={19} />
       <input
         ref={ref}
-        aria-label="Search channels"
-        placeholder="Search channels, countries or categories…"
+        type="search"
+        aria-label={label ?? t('Search channels')}
+        placeholder={placeholder ?? t('Channel, country, category or language…')}
+        autoComplete="off"
+        spellCheck={false}
+        onKeyDown={event => {
+          if (event.nativeEvent.isComposing || event.keyCode === 229) return
+          if (event.key === 'Escape' && query) { event.stopPropagation(); onChange('') }
+        }}
         value={query}
         onChange={event => onChange(event.target.value)}
         autoFocus={autoFocus}
@@ -96,7 +110,7 @@ export function ChannelSearch({
         <button
           type="button"
           className="icon-button"
-          aria-label="Clear search"
+          aria-label={t("Clear search")}
           onClick={() => {
             onChange('')
             ref.current?.focus()
@@ -105,6 +119,6 @@ export function ChannelSearch({
           <X size={18} />
         </button>
       )}
-    </label>
+    </div>
   )
 }

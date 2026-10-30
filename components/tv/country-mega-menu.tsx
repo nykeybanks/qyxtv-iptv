@@ -5,6 +5,8 @@ import { Check, Globe2, Search, X } from 'lucide-react'
 import type { Country } from '@/lib/iptv/types'
 import { useGridCapacity } from '@/hooks/use-viewport'
 import { Pager } from './channel-grid'
+import { useLanguage } from './language-provider'
+import { normalizeSearch } from '@/lib/iptv/search'
 
 export function CountryMegaMenu({
   open,
@@ -19,6 +21,7 @@ export function CountryMegaMenu({
   selected: string
   onSelect: (code: string) => void
 }) {
+  const { t } = useLanguage()
   const returnFocus = useRef<HTMLElement | null>(null)
   const [query, setQuery] = useState('')
   const [letter, setLetter] = useState('')
@@ -39,28 +42,28 @@ export function CountryMegaMenu({
         >
           <div className="dialog-heading">
             <div>
-              <span className="eyebrow">NO BORDERS. JUST TELEVISION.</span>
-              <Dialog.Title>Explore the world.</Dialog.Title>
+              <span className="eyebrow">{t("NO BORDERS. JUST TELEVISION.")}</span>
+              <Dialog.Title>{t("Explore the world.")}</Dialog.Title>
             </div>
-            <Dialog.Close className="icon-button" aria-label="Close country menu">
+            <Dialog.Close className="icon-button" aria-label={t("Close country menu")}>
               <X size={22} />
             </Dialog.Close>
           </div>
           <Dialog.Description id="country-description">
-            Find your home. Discover somewhere new.
+            {t("Find your home. Discover somewhere new.")}
           </Dialog.Description>
           <div className="country-tools">
             <label className="search-field">
               <Search size={18} />
               <input
-                aria-label="Search countries"
+                aria-label={t("Search countries")}
                 value={query}
                 onChange={event => setQuery(event.target.value)}
-                placeholder="Search countries…"
+                placeholder={t("Search countries…")}
               />
             </label>
             <select
-              aria-label="Country alphabetical group"
+              aria-label={t("Country alphabetical group")}
               value={letter}
               onChange={event => setLetter(event.target.value)}
             >
@@ -79,15 +82,15 @@ export function CountryMegaMenu({
               </span>
               <span>
                 <strong>Canada</strong>
-                <small>HOME COUNTRY</small>
+                <small>{t("HOME COUNTRY")}</small>
               </span>
               {selected === 'CA' && <Check size={18} />}
             </button>
             <button className={selected === 'ALL' ? 'active' : ''} onClick={() => onSelect('ALL')}>
               <Globe2 size={24} />
               <span>
-                <strong>Worldwide</strong>
-                <small>EVERY COUNTRY</small>
+                <strong>{t("Worldwide")}</strong>
+                <small>{t("EVERY COUNTRY")}</small>
               </span>
               {selected === 'ALL' && <Check size={18} />}
             </button>
@@ -119,15 +122,16 @@ function CountryResults({
   selected: string
   onSelect: (code: string) => void
 }) {
+  const { t, channelCount, number } = useLanguage()
   const { ref, capacity, columns } = useGridCapacity(180, 88)
   const [anchor, setAnchor] = useState(0)
   const filtered = useMemo(
     () =>
       countries.filter(
         country =>
-          (country.name.toLowerCase().includes(query.toLowerCase()) ||
-            country.code.toLowerCase() === query.toLowerCase()) &&
-          (!letter || country.name.startsWith(letter))
+          (normalizeSearch(country.name).includes(normalizeSearch(query)) ||
+            normalizeSearch(country.code) === normalizeSearch(query)) &&
+          (!letter || normalizeSearch(country.name).startsWith(letter.toLowerCase()))
       ),
     [countries, query, letter]
   )
@@ -141,7 +145,7 @@ function CountryResults({
         style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
       >
         {!capacity ? (
-          <p className="fit-notice">Close the keyboard to browse the country grid.</p>
+          <p className="fit-notice">{t("Close the keyboard to browse the country grid.")}</p>
         ) : (
           filtered.slice(page * capacity, (page + 1) * capacity).map(country => (
             <button
@@ -153,17 +157,17 @@ function CountryResults({
               <span className="country-flag">{country.flag}</span>
               <span>
                 <strong>{country.name}</strong>
-                <small>{country.count.toLocaleString()} channels</small>
+                <small>{channelCount(country.count)}</small>
               </span>
               {selected === country.code && <Check size={16} />}
             </button>
           ))
         )}
-        {capacity > 0 && !filtered.length && <p>No matching countries.</p>}
+        {capacity > 0 && !filtered.length && <p>{t("No matching countries.")}</p>}
       </div>
       <div className="country-bottom">
         <span>
-          {filtered.length} countries <span className="desktop-only">· Alphabetical order</span>
+          {t('{count} countries', { count: number(filtered.length) })} <span className="desktop-only">· {t('Alphabetical order')}</span>
         </span>
         <Pager
           page={page}

@@ -18,8 +18,12 @@ import {
   Info
 } from 'lucide-react'
 import type { Channel } from '@/lib/iptv/types'
-import { QYXProductMark, QuantumYieldWordmark } from '@/components/brand'
 import { ChannelLogo } from './channel-grid'
+import { PlayerWatermark } from './player-watermark'
+import { QYXPreloader } from './qyx-preloader'
+import { BrandedPipWindow, useBrandedPip } from './branded-picture-in-picture'
+import { useLanguage } from './language-provider'
+import type { MessageKey, MessageValues } from '@/lib/iptv/i18n'
 
 type Playback = 'loading' | 'playing' | 'paused' | 'error'
 export function LiveTVPlayer({
@@ -37,26 +41,30 @@ export function LiveTVPlayer({
   onInfo: () => void
   onPlaying: (id: string) => void
 }) {
+  const { t } = useLanguage()
   const videoRef = useRef<HTMLVideoElement>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
   const hlsRef = useRef<Hls | null>(null)
   const onPlayingRef = useRef(onPlaying)
   onPlayingRef.current = onPlaying
   const [status, setStatus] = useState<Playback>('loading')
-  const [message, setMessage] = useState('')
+  const [notice, setNotice] = useState<{ key: MessageKey; values: MessageValues } | null>(null)
+  const message = notice ? t(notice.key, notice.values) : ''
+  function setMessage(key: MessageKey | '', values: MessageValues = {}) {
+    setNotice(key ? { key, values } : null)
+  }
+  const pip = useBrandedPip(videoRef, () => setMessage('Branded picture-in-picture is unavailable for this stream or embedded browser. Open QYXtv in a supported browser tab and try again.'))
   const [muted, setMuted] = useState(true)
   const [volume, setVolume] = useState(0.8)
   const [retry, setRetry] = useState(0)
   const [sourceChoice, setSourceChoice] = useState({ id: channel.id, index: 0 })
   const sourceIndex = sourceChoice.id === channel.id ? sourceChoice.index : 0
   const source = channel.streams[sourceIndex]
-  const [pipSupported, setPipSupported] = useState(false)
   const [fullscreenSupported, setFullscreenSupported] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const [atLiveEdge, setAtLiveEdge] = useState(true)
 
   useEffect(() => {
-    setPipSupported(!!document.pictureInPictureEnabled)
     setFullscreenSupported(!!document.fullscreenEnabled)
     const onFullscreen = () => setFullscreen(!!document.fullscreenElement)
     document.addEventListener('fullscreenchange', onFullscreen)
@@ -76,11 +84,11 @@ export function LiveTVPlayer({
     setStatus('loading')
     setMessage('Connecting to broadcaster…')
     setAtLiveEdge(true)
-    const fail = (reason: string) => {
+    const fail = (reason: MessageKey, values?: MessageValues) => {
       if (!disposed) {
         clearTimeout(startup)
         setStatus('error')
-        setMessage(reason)
+        setMessage(reason, values)
       }
     }
     const attemptPlay = () => {
@@ -142,7 +150,8 @@ export function LiveTVPlayer({
       }
       if (source.restriction) {
         fail(
-          `${source.restriction}. This source cannot be played directly here. Choose another source or channel.`
+          '{restriction}. This source cannot be played directly here. Choose another source or channel.',
+          { restriction: source.restriction }
         )
         return
       }
@@ -202,7 +211,8 @@ export function LiveTVPlayer({
               data.type === HlsEngine.ErrorTypes.MEDIA_ERROR)
           ) {
             retries += 1
-            setMessage(`Reconnecting to broadcaster (${retries}/2)…`)
+            setStatus('loading')
+            setMessage('Reconnecting to broadcaster ({count}/2)…', { count: retries })
             clearTimeout(timer)
             timer = setTimeout(() => {
               if (!disposed) {
@@ -267,24 +277,17 @@ export function LiveTVPlayer({
       setMessage('Fullscreen is not permitted in this embedded view.')
     }
   }
-  async function togglePip() {
-    try {
-      if (document.pictureInPictureElement) await document.exitPictureInPicture()
-      else await videoRef.current?.requestPictureInPicture()
-    } catch {
-      setMessage('Picture-in-picture is unavailable until the stream is playing.')
-    }
-  }
 
   return (
-    <section className="live-player" aria-label={`${channel.name} live player`}>
+    <section className="live-player" aria-label={t('{name} live player', { name: channel.name })}>
       <div className="video-surface" ref={surfaceRef}>
         <video
           data-scene-surface
           ref={videoRef}
           playsInline
+          crossOrigin="anonymous"
           muted={muted}
-          aria-label={`${channel.name} live stream`}
+          aria-label={t('{name} live stream', { name: channel.name })}
           onKeyDown={event => {
             if (event.key === ' ' && !event.nativeEvent.isComposing && event.keyCode !== 229) {
               event.preventDefault()
@@ -292,7 +295,19 @@ export function LiveTVPlayer({
             }
           }}
         />
-        {status !== 'playing' && (
+        {pip.active && (
+          <div className="playback-overlay pip-placeholder">
+            <PictureInPicture2 size={30} />
+            <p>{t('Playing in picture-in-picture')}</p>
+            <button className="button secondary" onClick={pip.close}>{t('Return to player')}</button>
+          </div>
+        )}
+        {!pip.active && status === 'loading' && (
+          <div className="playback-overlay" aria-busy="true">
+            <QYXPreloader compact label={t('Tuning in')} detail={message} />
+          </div>
+        )}
+        {!pip.active && status !== 'playing' && status !== 'loading' && (
           <div className="playback-overlay">
             <ChannelLogo channel={channel} />
             <div className="playback-message" role="status">
@@ -305,22 +320,22 @@ export function LiveTVPlayer({
               )}
               <strong>
                 {status === 'error'
-                  ? 'Stream unavailable'
+                  ? t("Stream unavailable")
                   : status === 'paused'
-                    ? 'Broadcast paused'
-                    : 'Tuning in'}
+                    ? t("Broadcast paused")
+                    : t("Tuning in")}
               </strong>
               <p>{message}</p>
               {status === 'error' ? (
                 <button className="button secondary" onClick={() => setRetry(value => value + 1)}>
                   <RotateCcw size={17} />
-                  Retry stream
+                  {t("Retry stream")}
                 </button>
               ) : (
                 status === 'paused' && (
                   <button className="button primary" onClick={togglePlay}>
                     <Play size={17} />
-                    Play live
+                    {t("Play live")}
                   </button>
                 )
               )}
@@ -331,40 +346,33 @@ export function LiveTVPlayer({
           <div className="video-broadcast-info">
             <span className="live-tag">
               <span />
-              {status === 'playing' ? 'LIVE' : 'IPTV'}
+              {status === 'playing' ? t("LIVE") : 'IPTV'}
             </span>
             <span>
               {source?.quality ?? 'HLS'} <span className="desktop-only">· {channel.country}</span>
             </span>
           </div>
-          <QYXProductMark
-            product="qyxtv"
-            variant="white"
-            height={28}
-            alt=""
-            aria-hidden="true"
-            className="player-watermark"
-          />
+          <PlayerWatermark />
         </div>
         <div className="player-controls">
           <button
             className="icon-button"
             onClick={togglePlay}
             disabled={status === 'error' || status === 'loading'}
-            aria-label={status === 'playing' ? 'Pause live TV' : 'Play live TV'}
+            aria-label={status === 'playing' ? t("Pause live TV") : t("Play live TV")}
           >
             {status === 'playing' ? <Pause size={20} /> : <Play size={20} />}
           </button>
-          <button className="icon-button" onClick={onPrevious} aria-label="Previous channel">
+          <button className="icon-button" onClick={onPrevious} aria-label={t("Previous channel")}>
             <SkipBack size={18} />
           </button>
-          <button className="icon-button" onClick={onNext} aria-label="Next channel">
+          <button className="icon-button" onClick={onNext} aria-label={t("Next channel")}>
             <SkipForward size={18} />
           </button>
           <button
             className="icon-button"
             onClick={() => setMuted(!muted)}
-            aria-label={muted ? 'Unmute' : 'Mute'}
+            aria-label={muted ? t("Unmute") : t("Mute")}
           >
             {muted || !volume ? <VolumeX size={20} /> : <Volume2 size={20} />}
           </button>
@@ -375,7 +383,7 @@ export function LiveTVPlayer({
             max="1"
             step="0.05"
             value={volume}
-            aria-label="Volume"
+            aria-label={t("Volume")}
             onChange={event => {
               setVolume(Number(event.target.value))
               setMuted(false)
@@ -383,21 +391,18 @@ export function LiveTVPlayer({
           />
           <button className="return-live" onClick={goLive} disabled={status === 'error'}>
             <span className={atLiveEdge && status === 'playing' ? 'status-dot' : 'muted-dot'} />
-            <span>{atLiveEdge ? 'LIVE' : 'Go live'}</span>
+            <span>{atLiveEdge ? t("LIVE") : t("Go live")}</span>
           </button>
           <span className="control-spacer">
-            <QuantumYieldWordmark
-              variant="white"
-              height={24}
-              className="player-watermark player-footer-brand"
-            />
+            <PlayerWatermark footer />
           </span>
-          {pipSupported && (
+          {pip.supported && (
             <button
               className="icon-button pip-button"
-              onClick={togglePip}
-              aria-label="Picture in picture"
-              disabled={status !== 'playing'}
+              onClick={pip.toggle}
+              aria-label={pip.opening ? t('Opening picture-in-picture…') : pip.active ? t('Exit picture in picture') : t('Picture in picture')}
+              aria-pressed={pip.active}
+              disabled={pip.opening || (!pip.active && status !== 'playing')}
             >
               <PictureInPicture2 size={19} />
             </button>
@@ -406,7 +411,7 @@ export function LiveTVPlayer({
             <button
               className="icon-button"
               onClick={toggleFullscreen}
-              aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              aria-label={fullscreen ? t("Exit fullscreen") : t("Fullscreen")}
             >
               {fullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
             </button>
@@ -415,14 +420,14 @@ export function LiveTVPlayer({
       </div>
       <div className="player-info">
         <div className="now-watching">
-          <span className="eyebrow">NOW WATCHING</span>
+          <span className="eyebrow">{t("NOW WATCHING")}</span>
           <h1>{channel.name}</h1>
         </div>
         <div className="player-info-actions">
           <label className="source-select">
-            <span className="sr-only">Stream source</span>
+            <span className="sr-only">{t("Stream source")}</span>
             <select
-              aria-label="Stream source"
+              aria-label={t("Stream source")}
               value={sourceIndex}
               onChange={event =>
                 setSourceChoice({ id: channel.id, index: Number(event.target.value) })
@@ -430,26 +435,27 @@ export function LiveTVPlayer({
             >
               {channel.streams.map((stream, index) => (
                 <option key={stream.url} value={index}>
-                  Source {index + 1}
+                  {t('Source {count}', { count: index + 1 })}
                   {stream.quality ? ` · ${stream.quality}` : ''}
-                  {stream.restriction ? ' · Restricted' : ''}
+                  {stream.restriction ? ` · ${t('Restricted')}` : ''}
                 </option>
               ))}
             </select>
           </label>
           <button
             className="icon-button"
-            aria-label="Channel information and guide"
+            aria-label={t("Channel information and guide")}
             onClick={onInfo}
           >
             <Info size={20} />
           </button>
           <button className="button secondary channel-picker-button" onClick={onChannels}>
             <ListVideo size={18} />
-            <span>Channels</span>
+            <span>{t("Channels")}</span>
           </button>
         </div>
       </div>
+      {pip.pipWindow && <BrandedPipWindow pipWindow={pip.pipWindow} videoRef={videoRef} name={channel.name} status={status} message={message} muted={muted} onPlay={togglePlay} onMute={() => setMuted(!muted)} onPrevious={onPrevious} onNext={onNext} onReturn={pip.close} />}
       {message && status === 'playing' && (
         <p className="player-notice" role="status">
           {message}

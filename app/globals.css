@@ -2,6 +2,7 @@
 @import '../styles/qyx.css';
 @import '../styles/tailwind-theme.css';
 @import '../styles/viewport.css';
+@import '../styles/player-experience.css';
 
 :root {
   color-scheme: dark;
@@ -1114,7 +1115,6 @@ svg {
 }
 .player-watermark {
   flex-shrink: 0;
-  opacity: 0.33;
   pointer-events: none;
   user-select: none;
 }

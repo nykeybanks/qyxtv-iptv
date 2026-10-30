@@ -1,7 +1,7 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
-import { ArrowUpRight, History, X } from 'lucide-react'
+import { ArrowUpRight, History, X, ChevronLeft, ListVideo } from 'lucide-react'
 import type { Catalogue, Channel, Scene } from '@/lib/iptv/types'
 import { usePreferences } from '@/hooks/use-preferences'
 import { useViewport } from '@/hooks/use-viewport'
@@ -15,8 +15,15 @@ import { LiveTVPlayer } from './live-tv-player'
 import { ChannelSidebar } from './channel-sidebar'
 import { ChannelPicker, EPGGuide, ViewerDialog, fetchJson } from './viewer-dialogs'
 
+import { LanguageSwitch, useLanguage } from './language-provider'
+import { QYXPreloader } from './qyx-preloader'
+import { createChannelIndex, searchChannels } from '@/lib/iptv/search'
+
+const emptyChannels: Channel[] = []
 export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }) {
   useViewport()
+  const { t, locale, countryName, categoryName, languageName, channelCount } = useLanguage()
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const { preferences, update, storageUnavailable } = usePreferences()
   const [scene, setScene] = useState<Scene>(initialScene)
   const [countryOpen, setCountryOpen] = useState(false)
@@ -25,6 +32,7 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
   const [infoOpen, setInfoOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
   const [category, setCategory] = useState('')
   const [language, setLanguage] = useState('')
   const [selected, setSelected] = useState<Channel | null>(null)
@@ -55,8 +63,7 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
       ? {
           code: preferences.country,
           name:
-            new Intl.DisplayNames(['en'], { type: 'region' }).of(preferences.country) ??
-            preferences.country,
+            countryName(preferences.country),
           flag: '',
           count: 0
         }
@@ -65,44 +72,39 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
     `${scene}:${preferences.country}:${selected?.id ?? ''}`,
     preferences.motion
   )
-  const countries = data?.countries ?? []
+  const countries = useMemo(() => (data?.countries ?? []).map(item => ({ ...item, name: countryName(item.code, item.name) })).sort((a, b) => a.name.localeCompare(b.name, locale)), [data?.countries, locale, countryName])
+  const selectedCountryName = country ? countryName(country.code, country.name) : t('Worldwide')
   const sourceChannels =
-    scene === 'favorites' || scene === 'recent' ? (library?.channels ?? []) : (data?.channels ?? [])
+    scene === 'favorites' || scene === 'recent' ? (library?.channels ?? emptyChannels) : (data?.channels ?? emptyChannels)
+  const searchIndex = useMemo(() => createChannelIndex(sourceChannels, data), [sourceChannels, data])
   const channels = useMemo(() => {
-    const needle = query.trim().toLowerCase()
-    const result = sourceChannels.filter(
-      channel =>
-        (!category || channel.categories.includes(category)) &&
-        (!language || channel.languages.includes(language)) &&
-        (!needle ||
-          `${channel.name} ${channel.country} ${channel.categories.join(' ')} ${countries.find(country => country.code === channel.country)?.name ?? ''}`
-            .toLowerCase()
-            .includes(needle))
-    )
-    return scene === 'recent'
+    const result = searchChannels(searchIndex, deferredQuery).filter(channel =>
+      (!category || channel.categories.includes(category)) && (!language || channel.languages.includes(language)))
+    return scene === 'recent' && !deferredQuery.trim()
       ? result.sort((a, b) => preferences.recent.indexOf(a.id) - preferences.recent.indexOf(b.id))
       : result
-  }, [sourceChannels, query, category, language, countries, scene, preferences.recent])
+  }, [searchIndex, deferredQuery, category, language, scene, preferences.recent])
   const featured =
     data?.channels.find(channel => channel.id === 'IciRadioCanadaTele.ca') ??
     data?.channels.find(channel => !channel.streams[0]?.restriction) ??
     data?.channels[0]
   const home = scene === 'discover' && !searchOpen && !query
   const playingScene = scene === 'live' && !!selected
+  const initialLoading = !selected && isLoading && !data && !error
   const title =
     scene === 'favorites'
-      ? 'Your favorites'
+      ? t('Your favorites')
       : scene === 'recent'
-        ? 'Recently watched'
+        ? t('Recently watched')
         : query
-          ? 'Search results'
+          ? t('Search results')
           : category
-            ? `${data?.categories.find(item => item.id === category)?.name ?? category} channels`
+            ? t('{name} channels', { name: categoryName(category) })
             : preferences.country === 'CA'
-              ? 'Live from Canada'
+              ? t('Live from Canada')
               : preferences.country === 'ALL'
-                ? 'Live around the world'
-                : `Live from ${country?.name ?? preferences.country}`
+                ? t('Live around the world')
+                : t('Live from {name}', { name: selectedCountryName })
 
   useEffect(() => {
     document.documentElement.dataset.motion = preferences.motion
@@ -127,6 +129,21 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
       removeEventListener('popstate', pop)
     }
   }, [])
+  useEffect(() => {
+    const shortcut = (event: KeyboardEvent) => {
+      if (event.isComposing || event.keyCode === 229 || event.altKey) return
+      const target = event.target as HTMLElement | null
+      const editing = target?.matches('input, textarea, select, [contenteditable="true"]')
+      if ((event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) || (event.key === '/' && !editing)) {
+        event.preventDefault()
+        setSearchOpen(true)
+        if (scene === 'live') { setScene('discover'); history.pushState(null, '', '/') }
+        requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.browse-toolbar input[type="search"]')?.focus())
+      }
+    }
+    addEventListener('keydown', shortcut)
+    return () => removeEventListener('keydown', shortcut)
+  }, [scene])
   function navigate(next: Scene) {
     setScene(next)
     history.pushState(null, '', next === 'discover' ? '/' : `/${next}`)
@@ -185,27 +202,28 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
       {(!online || storageUnavailable || !!data?.warnings.length) && (
         <div className="app-notice" role="status">
           {!online
-            ? 'Offline. Your saved choices are still available; streams need an internet connection.'
+            ? t("Offline. Your saved choices are still available; streams need an internet connection.")
             : storageUnavailable
-              ? 'Browser storage is unavailable. Your choices will last for this session only.'
+              ? t("Browser storage is unavailable. Your choices will last for this session only.")
               : data?.warnings[0]}
         </div>
       )}
       <main
         ref={sceneRef}
-        className={`tv-main ${home ? 'home-scene' : playingScene ? 'watch-scene' : 'browse-scene'}`}
+        className={`tv-main ${initialLoading ? 'catalogue-loading' : home ? 'home-scene' : playingScene ? 'watch-scene' : 'browse-scene'}`}
         id="main-content"
       >
-        {home && (
+        {initialLoading && <QYXPreloader label={t('Loading QYXtv')} detail={t('Connecting to IPTV-org')} />}
+        {!initialLoading && home && (
           <FeaturedChannelHero
-            countryName={country?.name ?? 'Worldwide'}
+            countryName={selectedCountryName}
             featured={featured}
             onWatch={watch}
             onCountries={() => setCountryOpen(true)}
             count={data?.channels.length ?? 0}
           />
         )}
-        {!playingScene && (
+        {!initialLoading && !playingScene && (
           <>
             <CategoryFilters
               value={category}
@@ -216,10 +234,15 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
             {(searchOpen || !home) && (
               <div className="browse-toolbar">
                 <ChannelSearch query={query} onChange={setQuery} autoFocus={searchOpen} />
+                {preferences.country !== 'ALL' && scene !== 'favorites' && scene !== 'recent' && (
+                  <button className="search-scope" title={t('Search worldwide')} aria-label={t('Search worldwide')} onClick={() => update(current => ({ ...current, country: 'ALL' }))}>
+                    {selectedCountryName}<ArrowUpRight size={14} />
+                  </button>
+                )}
                 {searchOpen && (
                   <button
                     className="icon-button"
-                    aria-label="Close search"
+                    aria-label={t("Close search")}
                     onClick={() => {
                       setSearchOpen(false)
                       setQuery('')
@@ -230,7 +253,7 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
                 )}
                 <button
                   className="icon-button"
-                  aria-label="Recently watched channels"
+                  aria-label={t("Recently watched channels")}
                   onClick={() => navigate('recent')}
                 >
                   <History size={20} />
@@ -239,10 +262,10 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
             )}
             <div className="catalogue-zone" data-scene-group>
               <ChannelGrid
-                key={`${scene}:${preferences.country}:${category}:${language}:${query}`}
+                key={`${scene}:${preferences.country}:${category}:${language}:${deferredQuery}`}
                 title={title}
                 subtitle={
-                  isLoading ? 'Loading catalogue' : `${channels.length.toLocaleString()} channels`
+                  isLoading ? t('Loading catalogue') : channelCount(channels.length)
                 }
                 channels={channels}
                 favorites={preferences.favorites}
@@ -258,6 +281,7 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
                 }}
                 carousel={home}
                 selectedId={selected?.id}
+                onReset={query || category || language ? () => { setQuery(''); setCategory(''); setLanguage('') } : undefined}
               />
             </div>
           </>
@@ -267,15 +291,15 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
             <div className="watch-heading">
               <div>
                 <span className="status-dot" />
-                <span>LIVE TELEVISION</span>
-                <span className="muted">/ {country?.name ?? 'Worldwide'}</span>
+                <span>{t("LIVE TELEVISION")}</span>
+                <span className="muted">/ {selectedCountryName}</span>
               </div>
               <button className="text-button" onClick={() => navigate('discover')}>
-                Back to discover
+                {t("Back to discover")}
                 <ArrowUpRight size={16} />
               </button>
             </div>
-            <div className="watch-layout">
+            <div className={`watch-layout ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
               <div className="watch-primary">
                 <LiveTVPlayer
                   channel={selected}
@@ -286,13 +310,21 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
                   onPlaying={markWatched}
                 />
               </div>
-              <div className="watch-sidebar" data-scene-group>
+              <div className="watch-sidebar" id="live-channel-panel" hidden={!sidebarOpen} data-scene-group>
                 <ChannelSidebar
-                  channels={data?.channels ?? []}
+                  channels={data?.channels ?? emptyChannels}
+                  metadata={data}
                   selectedId={selected.id}
                   onWatch={watch}
+                  onCollapse={() => setSidebarOpen(false)}
                 />
               </div>
+              {!sidebarOpen && <button className="collapsed-channel-rail" aria-label={t('Expand channel panel')} aria-expanded={false} aria-controls="live-channel-panel" onClick={() => setSidebarOpen(true)}>
+                <ChevronLeft size={18} className="channel-toggle-hint" />
+                <ListVideo size={19} />
+                <span>{t('On the air')}</span>
+                <small>{data?.channels.length ?? 0}</small>
+              </button>}
             </div>
           </>
         )}
@@ -300,14 +332,14 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
       <footer className="status-bar">
         <div>
           <span className="status-dot" />
-          <span>YOUR WORLD. LIVE.</span>
+          <span>{t("YOUR WORLD. LIVE.")}</span>
           <span className="footer-rule" />
-          <span className="muted">Powered by public IPTV-org streams</span>
+          <span className="muted">{t("Powered by public IPTV-org streams")}</span>
         </div>
         <div>
-          <span className="desktop-only muted">Availability varies by broadcaster and region.</span>
+          <span className="desktop-only muted">{t("Availability varies by broadcaster and region.")}</span>
           <span className="footer-rule" />
-          <span className="footer-brand">A QuantumYield experience</span>
+          <span className="footer-brand">{t("A QuantumYield experience")}</span>
         </div>
       </footer>
       <MobileNavigation
@@ -325,46 +357,46 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
       <ViewerDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        title={settingsTab === 'filters' ? 'Fine-tune your channels' : 'Your viewing experience'}
+        title={settingsTab === 'filters' ? t("Fine-tune your channels") : t("Your viewing experience")}
       >
         <div className="settings-tabs">
           <button
             className={settingsTab === 'filters' ? 'active' : ''}
             onClick={() => setSettingsTab('filters')}
           >
-            Filters
+            {t("Filters")}
           </button>
           <button
             className={settingsTab === 'viewing' ? 'active' : ''}
             onClick={() => setSettingsTab('viewing')}
           >
-            Viewing
+            {t("Viewing")}
           </button>
         </div>
         {settingsTab === 'filters' ? (
           <div className="settings-form">
             <label>
-              Category
+              {t("Category")}
               <select value={category} onChange={event => setCategory(event.target.value)}>
-                <option value="">All categories</option>
+                <option value="">{t("All categories")}</option>
                 {data?.categories.map(item => (
                   <option key={item.id} value={item.id}>
-                    {item.name}
+                    {categoryName(item.id, item.name)}
                   </option>
                 ))}
               </select>
             </label>
             <label>
-              Broadcast language
+              {t("Broadcast language")}
               <select value={language} onChange={event => setLanguage(event.target.value)}>
-                <option value="">All languages</option>
+                <option value="">{t("All languages")}</option>
                 {data?.languages
                   .filter(item =>
                     data.channels.some(channel => channel.languages.includes(item.code))
                   )
                   .map(item => (
                     <option key={item.code} value={item.code}>
-                      {item.name}
+                      {languageName(item.code, item.name)}
                     </option>
                   ))}
               </select>
@@ -378,17 +410,18 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
                   setQuery('')
                 }}
               >
-                Reset filters
+                {t("Reset filters")}
               </button>
               <button className="button primary" onClick={() => setSettingsOpen(false)}>
-                Show channels
+                {t("Show channels")}
               </button>
             </div>
           </div>
         ) : (
           <div className="settings-form">
+            <div className="language-setting"><span>{t('Interface language')}</span><LanguageSwitch /></div>
             <label>
-              Scene motion
+              {t("Scene motion")}
               <select
                 value={preferences.motion}
                 onChange={event =>
@@ -398,14 +431,13 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
                   }))
                 }
               >
-                <option value="immersive">Immersive</option>
-                <option value="balanced">Balanced</option>
-                <option value="reduced">Reduced</option>
+                <option value="immersive">{t("Immersive")}</option>
+                <option value="balanced">{t("Balanced")}</option>
+                <option value="reduced">{t("Reduced")}</option>
               </select>
             </label>
             <p>
-              Immersive and Balanced use a three-second scene transition. Reduced is instant. Your
-              system reduced-motion preference always takes priority.
+              {t("Immersive and Balanced use a three-second scene transition. Reduced is instant. Your system reduced-motion preference always takes priority.")}
             </p>
             <button
               className="button secondary"
@@ -415,11 +447,10 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
               }}
             >
               <History size={18} />
-              Recently watched
+              {t("Recently watched")}
             </button>
             <p className="muted">
-              Favorites, recent channels, and country selection are saved only in this browser. No
-              account is required.
+              {t("Favorites, recent channels, and country selection are saved only in this browser. No account is required.")}
             </p>
           </div>
         )}
@@ -427,14 +458,15 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
       <ChannelPicker
         open={pickerOpen}
         onOpenChange={setPickerOpen}
-        channels={data?.channels ?? []}
+        channels={data?.channels ?? emptyChannels}
+        metadata={data}
         selectedId={selected?.id}
         onWatch={watch}
       />
       <ViewerDialog
         open={infoOpen}
         onOpenChange={setInfoOpen}
-        title={selected?.name ?? 'Channel information'}
+        title={selected?.name ?? t("Channel information")}
       >
         {selected && <EPGGuide channel={selected} />}
       </ViewerDialog>

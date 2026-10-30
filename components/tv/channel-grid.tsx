@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { ArrowLeft, ArrowRight, Heart, Play, Radio, Tv } from 'lucide-react'
 import type { Channel } from '@/lib/iptv/types'
 import { useGridCapacity } from '@/hooks/use-viewport'
+import { useLanguage } from './language-provider'
+import { QYXPreloader } from './qyx-preloader'
 
 export function ChannelLogo({ channel, className = '' }: { channel: Channel; className?: string }) {
   const [failed, setFailed] = useState<string | null>(null)
@@ -34,17 +36,18 @@ export function ChannelCard({
   onFavorite: (id: string) => void
   selected?: boolean
 }) {
+  const { t, categoryName } = useLanguage()
   return (
     <article className={`channel-card ${selected ? 'selected' : ''}`}>
       <button
         className="channel-watch"
         onClick={() => onWatch(channel)}
-        aria-label={`Watch ${channel.name}`}
+        aria-label={t('Watch {name}', { name: channel.name })}
       >
         <span className="channel-art">
           <span className="live-tag">
             <span />
-            LIVE
+            {t("LIVE")}
           </span>
           <ChannelLogo channel={channel} />
           <span className="play-card">
@@ -55,14 +58,14 @@ export function ChannelCard({
         <span className="channel-caption">
           <strong>{channel.name}</strong>
           <span>
-            {channel.country} <span aria-hidden="true">·</span> {channel.categories[0] ?? 'General'}
-            {channel.streams[0]?.restriction ? ' · Restricted' : ''}
+            {channel.country} <span aria-hidden="true">·</span> {categoryName(channel.categories[0] ?? 'general')}
+            {channel.streams[0]?.restriction ? ` · ${t('Restricted')}` : ''}
           </span>
         </span>
       </button>
       <button
         className={`favorite-button ${favorite ? 'active' : ''}`}
-        aria-label={`${favorite ? 'Remove' : 'Add'} ${channel.name} ${favorite ? 'from' : 'to'} favorites`}
+        aria-label={t(favorite ? 'Remove {name} from favorites' : 'Add {name} to favorites', { name: channel.name })}
         aria-pressed={favorite}
         onClick={() => onFavorite(channel.id)}
       >
@@ -83,6 +86,8 @@ export function Pager({
   onPage: (page: number) => void
   label: string
 }) {
+  const { t } = useLanguage()
+  const translatedLabel = label === 'channels' || label === 'live channels' || label === 'countries' ? t(label) : label
   return (
     <div className="pager">
       <span className="page-count">
@@ -92,7 +97,7 @@ export function Pager({
         className="icon-button"
         disabled={page === 0 || !pages}
         onClick={() => onPage(page - 1)}
-        aria-label={`Previous ${label}`}
+        aria-label={t('Previous {label}', { label: translatedLabel })}
       >
         <ArrowLeft size={18} />
       </button>
@@ -100,7 +105,7 @@ export function Pager({
         className="icon-button"
         disabled={page >= pages - 1}
         onClick={() => onPage(page + 1)}
-        aria-label={`Next ${label}`}
+        aria-label={t('Next {label}', { label: translatedLabel })}
       >
         <ArrowRight size={18} />
       </button>
@@ -119,7 +124,8 @@ export function ChannelGrid({
   error,
   onRetry,
   carousel = false,
-  selectedId
+  selectedId,
+  onReset
 }: {
   channels: Channel[]
   title: string
@@ -132,7 +138,9 @@ export function ChannelGrid({
   onRetry?: () => void
   carousel?: boolean
   selectedId?: string
+  onReset?: () => void
 }) {
+  const { t } = useLanguage()
   const { ref, capacity, columns } = useGridCapacity(
     carousel ? 180 : 200,
     carousel ? 176 : 184,
@@ -143,7 +151,8 @@ export function ChannelGrid({
   const page = Math.min(Math.floor(anchor / (capacity || 1)), Math.max(0, pages - 1))
   const visible = capacity ? channels.slice(page * capacity, (page + 1) * capacity) : []
   return (
-    <section className={`channel-section ${carousel ? 'carousel' : ''}`} aria-label={title}>
+    <section className={`channel-section ${carousel ? 'carousel' : ''}`} aria-label={title} aria-busy={loading}>
+      <span className="sr-only" role="status">{subtitle}</span>
       <div className="section-heading">
         <div className="section-title">
           <h2>{title}</h2>
@@ -162,23 +171,20 @@ export function ChannelGrid({
         style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
       >
         {loading ? (
-          Array.from({ length: Math.max(1, capacity) }, (_, index) => (
-            <div className="channel-skeleton" key={index} aria-hidden="true" />
-          ))
+          <div className="grid-message"><QYXPreloader compact label={t('Loading channels')} /></div>
         ) : error ? (
           <div className="grid-message" role="alert">
             <Radio />
-            <strong>Unable to load channels</strong>
+            <strong>{t("Unable to load channels")}</strong>
             <p>{error}</p>
             <button className="button secondary" onClick={onRetry}>
-              Try again
+              {t("Try again")}
             </button>
           </div>
         ) : !capacity ? (
           <div className="grid-message">
             <p>
-              More height is needed to show channels readably. Close the keyboard or rotate your
-              screen.
+              {t("More height is needed to show channels readably. Close the keyboard or rotate your screen.")}
             </p>
           </div>
         ) : channels.length ? (
@@ -195,8 +201,9 @@ export function ChannelGrid({
         ) : (
           <div className="grid-message">
             <Tv size={28} />
-            <strong>No channels here yet</strong>
-            <p>Try another country or filter, or save a channel to your favorites.</p>
+            <strong>{t("No channels here yet")}</strong>
+            <p>{t("Try another country or filter, or save a channel to your favorites.")}</p>
+            {onReset && <button className="button secondary" onClick={onReset}>{t('Reset filters')}</button>}
           </div>
         )}
       </div>
