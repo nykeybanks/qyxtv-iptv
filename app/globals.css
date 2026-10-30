@@ -1093,13 +1093,29 @@ svg {
   left: 16px;
   right: 16px;
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 16px;
+  pointer-events: none;
   font-family: var(--font-qyx-mono), monospace;
   font-size: 11px;
   text-shadow: 0 1px 4px #000;
 }
+.video-broadcast-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
 .video-topline .live-tag {
   font-size: 11px;
+}
+.player-watermark {
+  flex-shrink: 0;
+  opacity: 0.33;
+  pointer-events: none;
+  user-select: none;
 }
 .playback-overlay {
   position: absolute;

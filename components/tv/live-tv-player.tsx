@@ -18,6 +18,7 @@ import {
   Info
 } from 'lucide-react'
 import type { Channel } from '@/lib/iptv/types'
+import { QYXProductMark } from '@/components/brand'
 import { ChannelLogo } from './channel-grid'
 
 type Playback = 'loading' | 'playing' | 'paused' | 'error'
@@ -327,13 +328,23 @@ export function LiveTVPlayer({
           </div>
         )}
         <div className="video-topline">
-          <span className="live-tag">
-            <span />
-            {status === 'playing' ? 'LIVE' : 'IPTV'}
-          </span>
-          <span>
-            {source?.quality ?? 'HLS'} <span className="desktop-only">· {channel.country}</span>
-          </span>
+          <div className="video-broadcast-info">
+            <span className="live-tag">
+              <span />
+              {status === 'playing' ? 'LIVE' : 'IPTV'}
+            </span>
+            <span>
+              {source?.quality ?? 'HLS'} <span className="desktop-only">· {channel.country}</span>
+            </span>
+          </div>
+          <QYXProductMark
+            product="qyxtv"
+            variant="white"
+            height={28}
+            alt=""
+            aria-hidden="true"
+            className="player-watermark"
+          />
         </div>
         <div className="player-controls">
           <button
