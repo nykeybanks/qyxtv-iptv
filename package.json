@@ -1,6 +1,11 @@
 {
   "name": "iptv",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit -p tsconfig.web.json",
+    "test:web": "vitest run web-tests --no-file-parallelism",
     "act:check": "gh act pull_request -W .github/workflows/check.yml",
     "act:format": "gh act workflow_dispatch -W .github/workflows/format.yml",
     "act:update": "gh act workflow_dispatch -W .github/workflows/update.yml",
@@ -39,7 +44,9 @@
     "@octokit/plugin-paginate-rest": "^13.1.1",
     "@octokit/plugin-rest-endpoint-methods": "^16.0.0",
     "@octokit/types": "^14.1.0",
+    "@radix-ui/react-dialog": "^1.3.1",
     "@stylistic/eslint-plugin": "^5.2.2",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/async": "^3.2.25",
     "@types/cli-progress": "^3.11.6",
     "@types/fs-extra": "^11.0.4",
@@ -59,19 +66,32 @@
     "glob": "^11.0.3",
     "globals": "^16.3.0",
     "hls-parser": "^0.16.0",
+    "hls.js": "^1.7.4",
     "iptv-playlist-parser": "^0.15.1",
     "lodash.uniqueid": "^4.0.1",
+    "lucide-react": "^1.65.0",
     "m3u-linter": "^0.4.3",
     "mediainfo.js": "^0.3.6",
     "mpd-parser": "^1.3.1",
+    "next": "^16.4.3",
     "node-cleanup": "^2.1.2",
     "normalize-url": "^8.1.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "socks-proxy-agent": "^8.0.5",
+    "swr": "^2.5.1",
+    "tailwindcss": "^4.3.3",
     "tsx": "^4.20.3",
     "vitest": "^5.0.1"
   },
   "overrides": {
-    "esbuild": "0.23.1",
+
     "@xmldom/xmldom": ">=0.8.13 <1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "~5.9.3"
   }
 }

@@ -1,0 +1,69 @@
+/* VisualViewport can shrink for a keyboard without changing CSS media-query height. */
+html[data-viewport-height='focused'] .featured-hero {
+  display: none;
+}
+html[data-viewport-height='focused'] .home-scene {
+  grid-template-rows: 48px minmax(0, 1fr);
+}
+html[data-viewport-height='focused'] .browse-scene {
+  grid-template-rows: 48px 52px minmax(0, 1fr);
+}
+html[data-viewport-height='focused'] .qyx-header {
+  flex-basis: 52px;
+}
+html[data-viewport-height='focused'] .country-dialog {
+  padding: 16px;
+  gap: 8px;
+}
+html[data-viewport-height='focused'] .country-dialog > p,
+html[data-viewport-height='focused'] .country-dialog .eyebrow,
+html[data-viewport-height='focused'] .country-pinned small {
+  display: none;
+}
+html[data-viewport-height='focused'] .country-dialog .dialog-heading h2 {
+  font-size: 20px;
+}
+html[data-viewport-height='focused'] .country-pinned button {
+  min-height: 44px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+html[data-viewport-height='focused'] .country-results {
+  grid-template-rows: minmax(0, 1fr) 44px;
+}
+html[data-viewport-height='focused'] .viewer-dialog {
+  padding: 16px;
+  gap: 8px;
+}
+html[data-viewport-height='focused'] .settings-form {
+  gap: 10px;
+}
+html[data-viewport-height='focused'] .settings-form p {
+  font-size: 12px;
+  line-height: 1.35;
+}
+html[data-viewport-height='focused'] .settings-form .muted {
+  display: none;
+}
+@media (max-width: 700px) {
+  html[data-viewport-height='compact'] .home-scene {
+    grid-template-rows: minmax(0, 1fr) 48px 220px;
+  }
+  html[data-viewport-height='compact'] .hero-content {
+    gap: 12px;
+  }
+  html[data-viewport-height='compact'] .hero-content h1 {
+    font-size: 34px;
+    line-height: 1.05;
+  }
+  html[data-viewport-height='compact'] .hero-content p,
+  html[data-viewport-height='compact'] .hero-meta {
+    display: none;
+  }
+  html[data-viewport-height='compact'] .channel-section {
+    grid-template-rows: 38px minmax(0, 1fr);
+  }
+  html[data-viewport-height='compact'] .catalogue-zone {
+    padding-bottom: 6px;
+  }
+}

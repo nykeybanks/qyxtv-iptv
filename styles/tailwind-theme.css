@@ -1,0 +1,16 @@
+/* Optional Tailwind CSS v4 mapping. Import tokens.css first. */
+@theme inline {
+  --color-qyx-black: var(--qyx-void-black);
+  --color-qyx-space: var(--qyx-space-black);
+  --color-qyx-charcoal: var(--qyx-deep-charcoal);
+  --color-qyx-graphite: var(--qyx-graphite);
+  --color-qyx-titanium: var(--qyx-titanium);
+  --color-qyx-silver: var(--qyx-silver);
+  --color-qyx-platinum: var(--qyx-platinum);
+  --color-qyx-champagne: var(--qyx-champagne);
+  --color-qyx-gold: var(--qyx-quantum-gold);
+  --font-display: var(--font-qyx-display);
+  --font-sans: var(--font-qyx-ui);
+  --font-body: var(--font-qyx-body);
+  --font-mono: var(--font-qyx-mono);
+}

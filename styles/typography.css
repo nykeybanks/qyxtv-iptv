@@ -1,0 +1,21 @@
+:root {
+  --font-qyx-display: 'Orbitron', 'Arial Narrow', sans-serif;
+  --font-qyx-ui: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-qyx-body: 'Exo 2', 'Inter', system-ui, sans-serif;
+  --font-qyx-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+}
+
+.qyx-display {
+  font-family: var(--font-qyx-display);
+  letter-spacing: 0.04em;
+}
+.qyx-ui {
+  font-family: var(--font-qyx-ui);
+}
+.qyx-body {
+  font-family: var(--font-qyx-body);
+}
+.qyx-mono {
+  font-family: var(--font-qyx-mono);
+  font-variant-numeric: tabular-nums;
+}

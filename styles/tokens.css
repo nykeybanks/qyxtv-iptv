@@ -1,0 +1,71 @@
+:root {
+  /* QYX foundations */
+  --qyx-void-black: #000000;
+  --qyx-space-black: #0a0a0a;
+  --qyx-deep-charcoal: #121212;
+  --qyx-graphite: #1a1a1a;
+
+  /* metallic neutrals */
+  --qyx-titanium: #b0b0b0;
+  --qyx-silver: #c0c0c0;
+  --qyx-platinum: #ececec;
+
+  /* controlled accents */
+  --qyx-champagne: #e6c7a0;
+  --qyx-warm-champagne: #e6cfa5;
+  --qyx-muted-gold: #b79355;
+  --qyx-quantum-gold: #c9a86a;
+
+  /* semantic states; these are not brand-primary colors */
+  --qyx-success: #57c98a;
+  --qyx-verified: #55b9d8;
+  --qyx-trusted: #b88ad8;
+  --qyx-processing: #5c8edb;
+  --qyx-pending: #d1a65f;
+  --qyx-error: #e06f6f;
+
+  /* semantic interface tokens */
+  --background: var(--qyx-space-black);
+  --foreground: #ffffff;
+  --surface: var(--qyx-deep-charcoal);
+  --surface-elevated: var(--qyx-graphite);
+  --foreground-muted: var(--qyx-titanium);
+  --border: rgba(236, 236, 236, 0.12);
+  --border-strong: rgba(236, 236, 236, 0.22);
+  --accent: var(--qyx-quantum-gold);
+  --accent-foreground: var(--qyx-space-black);
+
+  /* geometry */
+  --qyx-radius-xs: 4px;
+  --qyx-radius-sm: 8px;
+  --qyx-radius-md: 12px;
+  --qyx-radius-lg: 16px;
+  --qyx-radius-xl: 24px;
+
+  /* spacing */
+  --qyx-space-1: 4px;
+  --qyx-space-2: 8px;
+  --qyx-space-3: 12px;
+  --qyx-space-4: 16px;
+  --qyx-space-6: 24px;
+  --qyx-space-8: 32px;
+  --qyx-space-12: 48px;
+  --qyx-space-16: 64px;
+
+  /* motion */
+  --qyx-motion-fast: 160ms;
+  --qyx-motion-base: 220ms;
+  --qyx-motion-panel: 320ms;
+  --qyx-motion-complex: 400ms;
+  --qyx-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --qyx-ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --qyx-motion-fast: 1ms;
+    --qyx-motion-base: 1ms;
+    --qyx-motion-panel: 1ms;
+    --qyx-motion-complex: 1ms;
+  }
+}

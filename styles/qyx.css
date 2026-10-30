@@ -1,0 +1,33 @@
+@import './tokens.css';
+@import './typography.css';
+
+.qyx-root {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-qyx-ui);
+}
+
+.qyx-surface {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--qyx-radius-md);
+}
+
+.qyx-surface-elevated {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--qyx-radius-md);
+}
+
+.qyx-focusable:focus-visible {
+  outline: 2px solid var(--qyx-quantum-gold);
+  outline-offset: 3px;
+}
+
+.qyx-transition {
+  transition:
+    transform var(--qyx-motion-base) var(--qyx-ease-enter),
+    opacity var(--qyx-motion-base) var(--qyx-ease-enter),
+    border-color var(--qyx-motion-base) var(--qyx-ease-enter),
+    background-color var(--qyx-motion-base) var(--qyx-ease-enter);
+}
