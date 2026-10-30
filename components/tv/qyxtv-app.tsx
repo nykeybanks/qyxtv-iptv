@@ -84,10 +84,7 @@ export function QYXtvApp({ initialScene = 'discover' }: { initialScene?: Scene }
       : result
   }, [sourceChannels, query, category, language, countries, scene, preferences.recent])
   const featured =
-    data?.channels.find(
-      channel =>
-        /CBC News|Global News|CTV News/i.test(channel.name) && !channel.streams[0]?.restriction
-    ) ??
+    data?.channels.find(channel => channel.id === 'IciRadioCanadaTele.ca') ??
     data?.channels.find(channel => !channel.streams[0]?.restriction) ??
     data?.channels[0]
   const home = scene === 'discover' && !searchOpen && !query
